@@ -2846,3 +2846,17 @@ $$;
 revoke all on function public.place_cod_order(jsonb, jsonb, numeric) from public, anon;
 grant execute on function public.place_cod_order(jsonb, jsonb, numeric) to authenticated;
 drop function if exists public.place_cod_order(jsonb, jsonb);
+
+
+-- ============================================================================
+-- Migration: 202610090002_fix_customer_restaurant_settings_view_access.sql
+-- ============================================================================
+
+-- Keep the underlying settings table private while allowing customers to read
+-- only the columns exposed by the projection view.
+alter view public.customer_restaurant_settings
+  set (security_invoker = false);
+
+revoke all on public.customer_restaurant_settings from public, anon, authenticated;
+grant select on public.customer_restaurant_settings to anon, authenticated;
+notify pgrst, 'reload schema';
