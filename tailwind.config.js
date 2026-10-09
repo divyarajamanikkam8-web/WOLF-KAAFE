@@ -1,0 +1,2 @@
+/** @type {import('tailwindcss').Config} */
+export default { content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'], theme: { extend: { colors: { brand: { orange: '#F97316', burnt: '#C2410C', warm: '#FB923C', soft: '#FED7AA', pale: '#FFF7ED', ink: '#1C1917', gray: '#57534E', border: '#E7E5E4', success: '#16A34A', error: '#DC2626' } }, fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] }, boxShadow: { soft: '0 12px 36px rgba(28,25,23,.08)' } } }, plugins: [] };
