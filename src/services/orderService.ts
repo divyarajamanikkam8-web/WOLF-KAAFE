@@ -58,11 +58,31 @@ export async function getMyOrders(userId: string): Promise<CustomerOrder[]> {
   if (authError) throw authError;
   if (!authData.user || authData.user.id !== userId) throw new Error('Please sign in again to view your orders.');
   const { data, error } = await supabase.from('orders')
-    .select('id,status,payment_status,subtotal,delivery_fee,total,created_at,address_snapshot,order_items(id,food_item_id,name_snapshot,quantity,unit_price,size,offer_id,original_unit_price,discount_percentage,food:food_items(image_url)),reviews(food_item_id,food_rating,comment,created_at)')
+    .select('id,status,payment_status,subtotal,delivery_fee,total,created_at,address_snapshot,order_items(id,food_item_id,name_snapshot,quantity,unit_price,size,offer_id,original_unit_price,discount_percentage,food:food_items(image_url))')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data ?? []) as unknown as CustomerOrder[];
+  const orders = (data ?? []) as unknown as Omit<CustomerOrder, 'reviews'>[];
+  if (!orders.length) return [];
+
+  const { data: reviews, error: reviewsError } = await supabase.rpc('get_customer_order_food_reviews', {
+    p_order_ids: orders.map(order => order.id),
+  });
+  if (reviewsError) throw reviewsError;
+
+  const reviewsByOrder = new Map<string, OrderReview[]>();
+  for (const review of reviews ?? []) {
+    const orderReviews = reviewsByOrder.get(review.order_id) ?? [];
+    orderReviews.push({
+      food_item_id: review.food_item_id,
+      food_rating: review.food_rating,
+      comment: review.comment,
+      created_at: review.created_at,
+    });
+    reviewsByOrder.set(review.order_id, orderReviews);
+  }
+
+  return orders.map(order => ({ ...order, reviews: reviewsByOrder.get(order.id) ?? [] }));
 }
 
 export function subscribeToOrder(orderId: string, onUpdate: (row: unknown) => void) {
